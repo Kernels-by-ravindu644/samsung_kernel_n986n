@@ -10,6 +10,16 @@ set -euo pipefail
 KERNEL_ROOT="$(dirname "$(readlink -f "$0")")"
 cd "${KERNEL_ROOT}"
 
+# generate localversion
+BUILD_VERSION=$(git log -1 --pretty=%h 2>/dev/null)
+if [ -z "$BUILD_VERSION" ]; then
+    export BUILD_VERSION="dev"
+fi
+cat << EOF > "${KERNEL_ROOT}/arch/arm64/configs/version.config"
+CONFIG_LOCALVERSION_AUTO=n
+CONFIG_LOCALVERSION="-ravindu644-${BUILD_VERSION}"
+EOF
+
 # create build folders
 mkdir -p out dist
 
@@ -52,7 +62,7 @@ build_kernel(){
     # make "${BUILD_OPTIONS[@]}" clean && make "${BUILD_OPTIONS[@]}" mrproper
     
     # make default configuration.
-    make "${BUILD_OPTIONS[@]}" vendor/c2q_kor_singlew_defconfig custom.config
+    make "${BUILD_OPTIONS[@]}" vendor/c2q_kor_singlew_defconfig custom.config version.config
 
     # menuconfig, only when someone is at a terminal (skipped in CI)
     [ -t 0 ] && make "${BUILD_OPTIONS[@]}" menuconfig

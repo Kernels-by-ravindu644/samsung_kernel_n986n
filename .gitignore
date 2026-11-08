@@ -7,3 +7,4 @@
 /prebuilts/ramdisk.cpio
 /prebuilts/new-boot.img
 __pycache__/
+/arch/arm64/configs/version.config
