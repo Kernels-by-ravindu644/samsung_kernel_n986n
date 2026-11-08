@@ -52,7 +52,7 @@ build_kernel(){
     # make "${BUILD_OPTIONS[@]}" clean && make "${BUILD_OPTIONS[@]}" mrproper
     
     # make default configuration.
-    make "${BUILD_OPTIONS[@]}" vendor/c2q_kor_singlew_defconfig
+    make "${BUILD_OPTIONS[@]}" vendor/c2q_kor_singlew_defconfig custom.config
 
     # menuconfig, only when someone is at a terminal (skipped in CI)
     [ -t 0 ] && make "${BUILD_OPTIONS[@]}" menuconfig
