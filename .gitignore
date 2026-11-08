@@ -1,0 +1,8 @@
+*.patch
+*.rej
+/dist
+/out
+/prebuilts/dtb
+/prebuilts/kernel
+/prebuilts/ramdisk.cpio
+/prebuilts/new-boot.img
