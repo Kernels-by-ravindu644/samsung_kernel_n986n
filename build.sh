@@ -90,7 +90,7 @@ build_boot_img(){
 build_tar(){
     # Odin-flashable tar
     cd "${KERNEL_ROOT}/dist"
-    tar -cvf "SM-N986N-kernel-${BUILD_VERSION}.tar" boot.img && \
+    tar -cvf "SM-N986N-BakaSU-SuSFS-${BUILD_VERSION}.tar" boot.img && \
         echo -e "\n[INFO]: TAR BUILT SUCCESSFULLY..!\n"
     cd "${KERNEL_ROOT}"
 }
