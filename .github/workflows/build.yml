@@ -1,0 +1,89 @@
+name: Build and Release Kernel
+
+on:
+  push:
+    branches:
+      - main
+      - main-susfs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - branch: main
+            flavor: BakaSU
+            manager: "Manager: latest from https://t.me/BakaSU_Grp/4/ (this flavor follows BakaSU main)"
+          - branch: main-susfs
+            flavor: BakaSU-SuSFS
+            manager: "Manager: https://t.me/BakaSU_Grp/4/331699?single (BakaSU is frozen in this flavor, use this exact one)"
+    steps:
+      # no submodules here: build.sh clones BakaSU itself, with the full history its version code needs
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install -y \
+            build-essential bc bison flex patch pkg-config git curl tar xz-utils zip unzip \
+            cpio rsync kmod perl python3 python-is-python3 libssl-dev libelf-dev pahole \
+            libncurses-dev zlib1g-dev libyaml-dev lz4 zstd device-tree-compiler adb fastboot
+          # clang 10 from the Snapdragon LLVM toolchain still links against libtinfo.so.5, which noble dropped
+          sudo ln -s /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+
+      - name: Build kernel
+        run: ./build.sh
+
+      - name: Write release notes
+        run: |
+          cat > "dist/notes-${{ matrix.flavor }}.md" << EOF
+          ### ${{ matrix.flavor }}
+          - Kernel: \`$(git rev-parse --short HEAD)\` (${{ matrix.branch }})
+          - BakaSU: \`$(git -C KernelSU rev-parse --short=8 HEAD)\`
+          - ${{ matrix.manager }}
+
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.flavor }}
+          path: |
+            dist/*.tar
+            dist/notes-*.md
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Assemble release notes
+        run: |
+          {
+            echo "Automated build of the SM-N986N kernel, from ${{ github.repository }}."
+            echo "Flash one tar in Odin's AP slot. It carries boot.img only."
+            echo
+            cat dist/notes-*.md
+          } > notes.md
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: build-${{ github.run_number }}
+          name: "Kernel Release #${{ github.run_number }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          bodyFile: notes.md
+          artifacts: "dist/*.tar"
+          allowUpdates: true
