@@ -10,6 +10,10 @@ set -euo pipefail
 KERNEL_ROOT="$(dirname "$(readlink -f "$0")")"
 cd "${KERNEL_ROOT}"
 
+# BakaSU stays on the commit the gitlink pins: the SuSFS hooks and the frozen manager match it.
+# not shallow: BakaSU derives its version code from the commit count.
+git submodule update --init --recursive || true
+
 # generate localversion
 BUILD_VERSION=$(git log -1 --pretty=%h 2>/dev/null)
 if [ -z "$BUILD_VERSION" ]; then
