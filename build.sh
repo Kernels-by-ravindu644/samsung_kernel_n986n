@@ -74,5 +74,28 @@ build_kernel(){
     cp "${KERNEL_ROOT}/out/arch/arm64/boot/Image" "${KERNEL_ROOT}/dist/Image"
 }
 
+# header v2 carries the dtb in its own section and the stock kernel is a bare Image,
+# so Image-dtb (UNCOMPRESSED_IMG header + appended dtbs) is not what goes in here.
+# -n keeps samsung's gzip ramdisk as is, recompressing it changes the image.
+# magiskboot drops samsung's SignerVer02 block, the N986N bootloader boots fine without it.
+build_boot_img(){
+    local work="${KERNEL_ROOT}/out/bootimg" mb="${KERNEL_ROOT}/prebuilts/magiskboot"
+    rm -rf "${work}" && mkdir -p "${work}" && cd "${work}"
+    "${mb}" unpack -n "${KERNEL_ROOT}/prebuilts/boot.img"
+    cp "${KERNEL_ROOT}/dist/Image" kernel
+    "${mb}" repack "${KERNEL_ROOT}/prebuilts/boot.img" "${KERNEL_ROOT}/dist/boot.img"
+    cd "${KERNEL_ROOT}" && rm -rf "${work}"
+}
+
+build_tar(){
+    # Odin-flashable tar
+    cd "${KERNEL_ROOT}/dist"
+    tar -cvf "SM-N986N-kernel-${BUILD_VERSION}.tar" boot.img && \
+        echo -e "\n[INFO]: TAR BUILT SUCCESSFULLY..!\n"
+    cd "${KERNEL_ROOT}"
+}
+
 download_toolchains
 build_kernel
+build_boot_img
+build_tar
